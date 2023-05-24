@@ -12,8 +12,10 @@ regex = "1.8.2"
 tokio = { version = "1.28.1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.37"
 tracing-subscriber = {version = "0.3.17", features = ["env-filter"]}
+reqwest = "0.11.18"
+openssl = { version = "0.10", features = ["vendored"] }
 
 [dependencies.serenity]
 default-features = false
-features = ["builder"]
+features = ["builder", "model"]
 version = "0.11"
