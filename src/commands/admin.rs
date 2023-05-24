@@ -15,9 +15,7 @@ pub async fn admin(_ctx: Context<'_>) -> Result<(), Error> {
 
 /// Register new commands
 #[poise::command(slash_command)]
-pub async fn register(
-    ctx: Context<'_>,
-) -> Result<(), Error> {
+pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
     if is_owner(&ctx.author().id).await {
         poise::builtins::register_application_commands_buttons(ctx).await?;
     } else {
@@ -29,8 +27,12 @@ pub async fn register(
 /// Bot usage stats
 #[poise::command(slash_command)]
 pub async fn status(ctx: Context<'_>) -> Result<(), Error> {
-    let pid: u32 = std::process::id();
-    ctx.say(tools::process_info::get_process_info(pid).await?).await?;
+    if is_owner(&ctx.author().id).await {
+        let pid: u32 = std::process::id();
+        ctx.say(tools::process_info::get_process_info(pid).await?).await?;
+    } else {
+        ctx.say(format!("Sorry, only the owner can execute this command!")).await?;
+    }
     Ok(())
 }
 
