@@ -59,7 +59,7 @@ pub async fn user(
     let user_id = user.id.to_string();
 
     let file_s = format!("{}.png", user_id);
-    let file_full = format!("tmp/{}.png", user_id);
+    let file_full = format!("tmp/{}", &file_s);
     let file = AttachmentType::from(file_full.as_str());
 
     let user_icon_url = user.avatar_url().unwrap().replace(".webp", ".png");
@@ -92,6 +92,25 @@ pub async fn user(
 
 #[poise::command(slash_command)]
 pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
-    ctx.say("TODO: add bot info here").await?;
+
+    let file = AttachmentType::from("bot.jpeg");
+
+    ctx.send(|b| {
+        b.embed(|e| {
+            e.title("CyberBunny Info")
+            .description("Hello, I am CyberBunny!
+                I am a bot made in Rust as a practice project by Sara
+                You can look at my source code on github! - https://github.com/Sara-0x53617261/CyberBunny
+                I am build on the poise and serenity library.")
+            .thumbnail("attachment://bot.jpeg")
+            .footer(|f| {
+                f.text("CyberBunny - [Bot Info]")
+                .icon_url(statics::BOT_ICON)
+            })
+            .color(statics::EMBED_COLOR)
+            .timestamp(Timestamp::now())
+        });
+        b.attachment(file)
+    }).await?;
     Ok(())
 }

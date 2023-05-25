@@ -1,6 +1,6 @@
 // Environment variables
 use dotenv;
-use std::env;
+use std::{env, collections::HashSet};
 
 // Logger
 use tracing::{info, debug, error, instrument};
@@ -37,10 +37,15 @@ async fn main() {
 
 
     // Bot setup
+    let mut owner_list = HashSet::new();
+    owner_list.insert(serenity::UserId(190539099831140353));
+
     let options = poise::FrameworkOptions {
+        owners: owner_list,
         commands: vec![
             commands::admin::admin(),
             commands::info::info(),
+            commands::report::report(),
             ],
         ..Default::default()
     };
