@@ -4,6 +4,7 @@ use crate::tools::downloader::download;
 use poise::serenity_prelude as prelude;
 use serenity::model::channel::AttachmentType;
 use poise::serenity_prelude::Timestamp;
+use chrono::{NaiveDateTime, Utc};
 
 
 /// Info parent command
@@ -26,13 +27,17 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
     let guild_icon_url = guild.icon_url().unwrap().replace(".webp", ".png");
     _ = download(guild_icon_url.as_str(), &file_s).await;
 
+    let created_on = time_format(guild.id.created_at().unix_timestamp());
+    let created_since = time_since(guild.id.created_at().unix_timestamp());
+
     ctx.send(|b| {
         b.embed(|e| {
             e.title(format!("Server info for {}", guild.name))
             .description(format!(
-                "**Owner:** {}#{}\n**Users:** {}\nBoost level: {}\nThanks to: {} cool people",
+                "**Owner:** {}#{}\n**Users:** {}\nBoost level: {}\nThanks to: {} cool people\nCreated on: \n`{}` | `{}` days ago",
                 owner.name, owner.discriminator, guild.member_count, 
                 guild.premium_tier.num(), guild.premium_subscription_count,
+                created_on, created_since,
             ).as_str())
             .thumbnail(format!("attachment://{}.png", guild_id))
             .footer(|f| {
@@ -65,16 +70,25 @@ pub async fn user(
     let user_icon_url = user.avatar_url().unwrap().replace(".webp", ".png");
     _ = download(user_icon_url.as_str(), &file_s).await;
 
+    let created_on = time_format(user.created_at().unix_timestamp());
+    let created_since = time_since(user.created_at().unix_timestamp());
+
+    let member = ctx.guild().unwrap().member(&ctx, user.id).await?;
+    let time = member.joined_at.unwrap().unix_timestamp();
+    let joined_on = time_format(time);
+    let joined_since = time_since(time);
+
     ctx.send(|b| {
         b.embed(|e| {
-            e.title(format!("info for {}", user.name))
+            e.title(format!("Info for {}", user.name))
             .description(format!(
-                "**User ID:** {}\nUsername: {}\nDiscriminator: {}\nBot: {}\nAccount created on {}",
+                "User ID: `{}`\nUsername: {}\nDiscriminator: {}\nBot: {}\nAccount created on;\n `{}` | `{}` days ago\nJoined on;\n `{}` | `{}` days ago\n",
                 user.id,
                 user.name,
                 user.discriminator,
-                user.bot,
-                user.created_at().to_rfc2822(),
+                if user.bot {"Yes"} else {"No"},
+                created_on, created_since,
+                joined_on, joined_since,
             ).as_str())
             .thumbnail(format!("attachment://{}.png", user_id))
             .footer(|f| {
@@ -92,7 +106,6 @@ pub async fn user(
 
 #[poise::command(slash_command)]
 pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
-
     let file = AttachmentType::from("bot.jpeg");
 
     ctx.send(|b| {
@@ -113,4 +126,15 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
         b.attachment(file)
     }).await?;
     Ok(())
+}
+
+
+fn time_format(unix_time: i64) -> String {
+    let time = NaiveDateTime::from_timestamp_opt(unix_time, 0).unwrap();
+    format!("{}", time.format("%d-%m-%Y %H:%M:%S"))
+}
+
+fn time_since(unix_time: i64) -> String {
+    let time = NaiveDateTime::from_timestamp_opt(unix_time, 0).unwrap();
+    format!("{}", Utc::now().naive_utc().signed_duration_since(time).num_days() )
 }

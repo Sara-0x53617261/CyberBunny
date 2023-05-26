@@ -14,7 +14,7 @@ mod commands;
 mod tools;
 
 pub struct Data{
-    steam_api_token: String,
+    // steam_api_token: String,
 }
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -59,7 +59,7 @@ async fn main() {
                 // poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 ctx.set_activity(serenity::Activity::watching(format!("{} server(s) - OwO", ctx.cache.guild_count()))).await;
                 Ok(Data {
-                    steam_api_token: env::var("STEAM_API_TOKEN").expect("NO STEAM_API_TOKEN FOUND"),
+                    // steam_api_token: env::var("STEAM_API_TOKEN").expect("NO STEAM_API_TOKEN FOUND"),
                 })
             })
         });
