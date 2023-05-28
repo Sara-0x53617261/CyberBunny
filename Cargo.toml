@@ -18,5 +18,5 @@ chrono = "0.4.24"
 
 [dependencies.serenity]
 default-features = false
-features = ["builder", "model"]
+features = ["builder", "model", "collector"]
 version = "0.11"
