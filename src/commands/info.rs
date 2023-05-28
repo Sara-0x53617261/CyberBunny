@@ -101,7 +101,7 @@ pub async fn user(
         b.attachment(file)
     }).await?;
 
-    Ok(())
+    Ok(())hank you, your bug report was received
 }
 
 #[poise::command(slash_command)]
