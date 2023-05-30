@@ -3,7 +3,7 @@ use dotenv;
 use std::{env, collections::HashSet};
 
 // Logger
-use tracing::{info, debug, error, instrument};
+use tracing::info;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 // Discord bot library
