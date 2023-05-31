@@ -1,14 +1,22 @@
+use std::collections::{HashMap, BTreeMap};
+use std::vec;
+
 use crate::{Context, Error};
 use crate::commands::statics;
 use crate::tools::downloader::download;
+use serenity::prelude::Mentionable;
+use tracing::error;
 use poise::serenity_prelude as prelude;
+use serenity::futures::StreamExt;
 use serenity::model::channel::AttachmentType;
 use poise::serenity_prelude::Timestamp;
 use chrono::{NaiveDateTime, Utc};
 
+use itertools::Itertools;
+
 
 /// Info parent command
-#[poise::command(slash_command, subcommands("server", "user", "bot",))]
+#[poise::command(slash_command, subcommands("server", "user", "bot", "oldest"))]
 pub async fn info(_ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
@@ -104,6 +112,7 @@ pub async fn user(
     Ok(())
 }
 
+/// Gives some information about the bot.
 #[poise::command(slash_command)]
 pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
     let file = AttachmentType::from("bot.jpeg");
@@ -128,7 +137,94 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+#[derive(PartialEq, Eq, Clone, Debug)]
+struct OldUsers {
+    created_at: i64,
+    user: prelude::User,
+}
 
+// The User object does not support implementing Ord and PartialOrd
+// because.. reasons ig?
+// So i had to implement it manually.
+impl Ord for OldUsers {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.created_at.cmp(&other.created_at)
+    }
+}
+impl PartialOrd for OldUsers {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.created_at.cmp(&other.created_at))
+    }
+}
+
+/// Lists the oldest x amount of users.
+#[poise::command(slash_command)]
+pub async fn oldest(
+    ctx: Context<'_>,
+    #[description = "List the top ... amount of users"]
+    #[min = 1] users: Option<usize>,
+) -> Result<(), Error> {
+    let top_count = users.unwrap_or(10);
+    let mut members = ctx.guild_id().unwrap().members_iter(&ctx).boxed();
+
+    let mut top: Vec<OldUsers> = vec![];
+    let mut ind: usize;
+
+    while let Some(member) = members.next().await {
+
+        match member {
+            Ok(member) => {
+                if top.len() < top_count {
+                    // Populate the top list
+                    top.push(OldUsers { 
+                        created_at: member.user.created_at().unix_timestamp(), 
+                        user: member.user 
+                    });
+                } else {
+                    // find index of youngest user in list; 
+                    // if current user is older than youngest user in list
+                    // pop youngest user; push current user to list
+                    ind = top.iter().position_min().unwrap();
+
+                    if member.user.created_at().unix_timestamp() < top[ind].created_at {
+                        top.push(OldUsers { 
+                            created_at: member.user.created_at().unix_timestamp(), 
+                            user: member.user 
+                        });
+                        top.remove(ind);
+                    }
+                }
+            },
+            Err(err) => { error!("Error getting oldest users for a guild\n{:?}", err); }
+        }
+    }
+
+    let mut userlist: String = String::new();
+
+    for val in top.iter() {
+        userlist.push_str(format!(
+        "**User:** {}\nCreated on: `{}`\n\n",
+        val.user.mention(), time_format(val.created_at)).as_str());
+    }
+    ctx.send(|b| {
+        b.embed(|e| {
+            e.title("Oldest users")
+            .description(userlist)
+            .footer(|f| {
+                f.text("CyberBunny - [Oldest users]")
+                .icon_url(statics::BOT_ICON)
+            })
+            .color(statics::EMBED_COLOR)
+            .timestamp(Timestamp::now())
+        })
+    }).await?;
+
+    Ok(())
+}
+
+
+
+// TODO: Move these 2 to a util/tools module
 fn time_format(unix_time: i64) -> String {
     let time = NaiveDateTime::from_timestamp_opt(unix_time, 0).unwrap();
     format!("{}", time.format("%d-%m-%Y %H:%M:%S"))

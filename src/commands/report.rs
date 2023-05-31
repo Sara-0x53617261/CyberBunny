@@ -55,8 +55,8 @@ async fn save_bug_report(report: BugInfoModal, usern: String, uuid: u64) -> Resu
     let mut file = File::create(format!("bug_reports/{uuid}.txt")).await?;
 
     file.write_all(usern.as_bytes()).await?;
-    file.write_all("\n".as_bytes()).await?;
+    file.write_all(b"\n").await?;
     file.write_all(report.bug_info.as_bytes()).await?;
-    
+
     Ok(())
 }
